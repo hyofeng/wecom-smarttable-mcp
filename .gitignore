@@ -7,3 +7,16 @@ output/
 .env
 .env.*
 !.env.example
+
+# 登录态、真实链接和本机凭据不可进入版本控制。
+state.json
+state-*.tmp
+storage-state*.json
+cookies*.json
+target.json
+target-*.json
+*.pem
+*.key
+*.p12
+*.pfx
+.npmrc

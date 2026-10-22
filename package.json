@@ -28,5 +28,11 @@
     "@modelcontextprotocol/client": "2.3.1",
     "@types/node": "26.6.5",
     "typescript": "7.0.2"
+  },
+  "license": "MIT",
+  "description": "Read-only MCP server for WeCom smart tables using a local browser session.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hyofeng/wecom-smarttable-mcp.git"
   }
 }
