@@ -10,12 +10,15 @@ const targetPath=process.argv[2];
 if(!targetPath) throw new Error('Usage: node scripts/verify-live.mjs <private-target.json>');
 const {url}=JSON.parse(await readFile(targetPath,'utf8'));
 const client=new Client({name:'wecom-real-verifier',version:'0.1.0'});
-const transport=new StdioClientTransport({command:process.execPath,args:[resolve('dist/server.js')],stderr:'pipe'});
+const transport=new StdioClientTransport({command:process.execPath,args:[resolve('dist/server.js')],env:{WECOM_MCP_DATA_DIR:dataDir},stderr:'pipe'});
 let stderr='';transport.stderr?.on('data',data=>{stderr+=data.toString()});
 const report={sheets:[],image:null,attachment:null,file:null};
 async function call(name,args) {
  const result=await client.callTool({name,arguments:args});
- if(result.isError) throw new Error(`MCP verification failed: ${name}`);
+ if(result.isError) {
+  const code=result.structuredContent?.error?.code;
+  throw new Error(`MCP verification failed: ${name} (${typeof code==='string'&&/^[A-Z_]+$/.test(code)?code:'UNCLASSIFIED_ERROR'})`);
+ }
  assert.ok(result.structuredContent);
  return result;
 }
@@ -54,7 +57,7 @@ try {
   report.sheets.push({id:table.id,total,unique:seen.size,pages});
   console.log(JSON.stringify({sheet_index:report.sheets.length,total,unique:seen.size,pages}));
   if(firstImage&&!report.image) {
-   const result=await call('wecom_download_asset',{url,locator:firstImage.locator});
+   const result=await call('wecom_download_asset',{url,locator:firstImage.locator,inline_image:true});
    report.image=result.structuredContent;
    const data=await readFile(report.image.local_path);
    assert.equal(createHash('sha256').update(data).digest('hex'),report.image.sha256);

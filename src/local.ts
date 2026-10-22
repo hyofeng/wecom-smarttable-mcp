@@ -1,10 +1,10 @@
 import { chmod, lstat, mkdir, rename, writeFile } from 'node:fs/promises';
-import { fileURLToPath } from 'node:url';
 import { join, resolve } from 'node:path';
+import { homedir } from 'node:os';
 import { randomUUID } from 'node:crypto';
 import { WecomError } from './errors.js';
 
-export const dataDir = resolve(process.env.WECOM_MCP_DATA_DIR || fileURLToPath(new URL('../.local/', import.meta.url)));
+export const dataDir = resolve(process.env.WECOM_MCP_DATA_DIR || join(homedir(), '.local', 'share', 'wecom-smarttable-mcp'));
 export const statePath = join(dataDir, 'state.json');
 export const profilePath = join(dataDir, 'profile');
 

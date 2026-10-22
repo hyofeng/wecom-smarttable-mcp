@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { inflateSync, deflateSync } from 'node:zlib';
 import { parseChunk, assetsFor, cellsFor, presentRecord } from '../dist/protocol.js';
 import { documentUrl } from '../dist/local.js';
-import { validatedDownloadUrl } from '../dist/assets.js';
+import { validatedDownloadUrl } from '../dist/download.js';
 import { parseDrivePermission } from '../dist/wedrive.js';
 
 const fixture = async name => JSON.parse(await readFile(new URL(`fixtures/${name}.json`, import.meta.url), 'utf8'));

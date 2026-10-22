@@ -12,7 +12,7 @@ const results=[];
 async function connect(dir){
  const client=new Client({name:'wecom-error-verifier',version:'0.1.0'});
  await client.connect(new StdioClientTransport({command:process.execPath,args:[resolve('dist/server.js')],
-  ...(dir?{env:{...process.env,WECOM_MCP_DATA_DIR:dir}}:{})}));
+  env:{WECOM_MCP_DATA_DIR:dir||dataDir}}));
  return client;
 }
 async function expectError(c,name,args,code){

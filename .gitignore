@@ -20,3 +20,7 @@ target-*.json
 *.p12
 *.pfx
 .npmrc
+
+# 私有恢复备份不可进入公开仓库。
+*.bundle
+.backups/
