@@ -1,20 +1,20 @@
 # 企业微信智能表格 MCP
 
-本机 stdio MCP，使用你自己的网页登录权限。支持读取、新建智能表格、修改和增删记录、增删普通列，以及将整份智能表格文档移入回收站。浏览器负责手动登录，数据操作使用已实测的网页接口。无需机器人、企业应用 Secret、管理员授权、数据库或额外模型服务。
+本机 stdio MCP，复用个人网页登录态操作企业微信智能表格。支持读取表结构与记录、下载原图与附件、新建智能表格、增删改记录、增删普通列，以及将整份智能表格移入回收站。登录在专用 Chrome 窗口中手动完成，无需配置机器人、企业应用 Secret、管理员授权、数据库或额外模型服务。
 
 ## 日常使用与登录
 
-接入 Codex 后，直接说“用 MCP 看一下这个智能表格链接：……”。工具每次接收你当次提供的 URL，内部复用本机登录态，不绑定测试表格。
+接入客户端后，直接发送智能表格链接即可，例如：“用 MCP 看一下这个智能表格链接：……”。工具按当次传入的 URL 操作，并复用本机已保存的登录态。
 
-会话有效时直接操作；未登录或过期时，通过 MCP 表单弹出登录确认。确认后打开专用 Chrome，你手动扫码或登录；助手通过账号接口确认登录、保存会话并关闭窗口，MCP 最多恢复原操作一次。写入只有在请求尚未发出时才能进入这个流程；请求发出后的错误或核对失败不会自动重试。文档权限由原操作独立检查。取消表单、关闭登录窗口或取消请求会结束该次操作。不会因权限不足或解析失败而重新登录。
+会话有效时直接执行；未登录或会话过期时，先通过 MCP 表单弹出确认，确认后拉起专用 Chrome 窗口。手动扫码或登录后，登录助手会验证账号状态、保存会话并关闭浏览器窗口，随后自动恢复原请求一次。写入操作仅在请求尚未发出时才会进入登录恢复流程；请求发出后若遇到错误或回读校验失败，不会自动重试。文档读写权限由具体操作检查，权限不足或解析失败不会触发重新登录。取消表单、关闭浏览器窗口或中止请求会直接结束本次操作。
 
-登录助手最多等待 15 分钟。请使用示例配置中的 `tool_timeout_sec = 1200`，避免旧的 180 秒工具超时提前终止扫码。如果客户端不支持 MCP 表单，会明确说明并返回原来的 `LOGIN_REQUIRED` / `AUTH_EXPIRED` 错误，附上本机助手路径，不会静默打开浏览器。
+登录助手最长等待 15 分钟。建议按示例配置设置 `tool_timeout_sec = 1200`，避免客户端默认超时（如 180 秒）在扫码完成前中断请求。若客户端不支持 MCP 表单，工具会返回 `LOGIN_REQUIRED` 或 `AUTH_EXPIRED` 错误并附上本机登录助手路径，不会静默拉起浏览器。
 
-会话有效期由企业微信服务端决定，本机 Cookie 的过期标记不保证服务端一定保留会话；每次使用前都会请求真实用户接口验证。需要重新登录时按上述流程处理。
+会话有效期由企业微信服务端决定，本地 Cookie 过期时间不代表服务端会话仍然有效；每次执行前都会先调用用户接口校验会话。
 
 ## 首次准备与手动登录
 
-要求 Node.js 22+、Google Chrome，以及可访问目标智能表格的企业微信账号。当前仅在 macOS 本机完成验证；其他系统尚未验收。登录助手使用专用 profile，不接触日常浏览器资料。
+环境要求：Node.js 22+、Google Chrome，以及可访问目标智能表格的企业微信账号（目前已在 macOS 完成验证）。登录助手使用独立 profile，不影响日常使用的 Chrome 资料。
 
 首次使用先克隆仓库、安装依赖并构建：
 
@@ -25,113 +25,107 @@ npm ci
 npm run build
 ```
 
-当前从源码运行，未发布 npm 包；`package.json` 中的 `private: true` 用于防止误发布到 npm，不代表 GitHub 仓库是私密的。登录使用已安装的 Google Chrome，不需要另外执行 `playwright install` 下载浏览器。
+项目直接从源码构建运行，暂未发布到 npm（`package.json` 中的 `private: true` 仅用于防止误发布到 npm）。登录复用系统已安装的 Google Chrome，无需额外执行 `playwright install`。
 
-完成准备并接入后即可给 Codex 链接，首次登录也会由 MCP 引导。手动助手仅用于终端排查和不支持交互的客户端：可让 Codex 在任意目录执行 `node /absolute/path/to/wecom-smarttable-mcp/dist/login.js '当次智能表格链接'`。登录命令里的链接只是入口，不会绑定后续读取范围。不要把 Cookie、Token 或 cURL 发给 Codex。
+接入后直接向客户端提供链接即可，首次登录同样由 MCP 自动引导。如果需要在终端手动排查，或者客户端不支持表单交互，可执行：
 
-新建智能表格不需要已有链接；此时登录助手打开文档首页。手动排查也可以不传链接执行 `node /absolute/path/to/wecom-smarttable-mcp/dist/login.js`。升级到 v0.4 后运行 `npm run build` 并重新连接 MCP，使新增工具生效。
+```sh
+node /absolute/path/to/wecom-smarttable-mcp/dist/login.js '智能表格链接'
+```
 
-MCP 启动命令：
+命令中的链接仅用作登录后的跳转入口，不会限制后续可访问的表格范围；也可不传链接直接运行 `node /absolute/path/to/wecom-smarttable-mcp/dist/login.js`（默认打开企业微信文档首页，新建智能表格时同样使用该入口）。请勿在对话或配置中粘贴 Cookie、Token 或 cURL。
+
+MCP 启动命令（由客户端通过 stdin/stdout 拉起）：
 
 ```sh
 node /absolute/path/to/wecom-smarttable-mcp/dist/server.js
 ```
 
-该进程通过 stdin/stdout 通信，应由 MCP 客户端启动。
-
 ## Codex 接入
 
-将 [examples/codex-mcp.toml](examples/codex-mcp.toml) 的小节加入 `~/.codex/config.toml`，然后开启新的 Codex 会话。将示例里的 `/absolute/path/to/` 替换为实际绝对路径。运行 `node -p "process.execPath"` 获取 Node 路径并填入 `command`；`args` 和 `cwd` 使用克隆后的项目路径。以后升级或移动 Node 时同步调整 `command`。格式依据 [OpenAI 的 MCP 配置文档](https://learn.chatgpt.com/docs/extend/mcp?surface=cli)。
+将 [examples/codex-mcp.toml](examples/codex-mcp.toml) 中的配置段加入 `~/.codex/config.toml`，并开启新的 Codex 会话。把示例里的 `/absolute/path/to/` 替换为本机实际绝对路径：`command` 填 `node -p "process.execPath"` 输出的 Node 路径，`args` 和 `cwd` 填仓库路径。后续若升级或迁移 Node，需同步更新配置中的 `command`；修改代码、调整超时或工具定义后，重新执行 `npm run build` 并重连 MCP（或重开会话）即可生效。配置格式参考 [OpenAI MCP 配置文档](https://learn.chatgpt.com/docs/extend/mcp?surface=cli)。
 
-配置已通过本机 Codex CLI 的临时覆盖加载与 `mcp get` 检查；工具协议由 MCP SDK 客户端启动验证，图片由当前 Codex 会话打开验证。更新程序或超时配置后，重新连接 MCP 或开启新会话，使新登录流程生效。
-
-工具如下：
+提供的工具列表：
 
 | 工具 | 用途 |
 | --- | --- |
-| `wecom_table_structure` | 全部子表、字段 ID/名称/类型/标题列标记、视图、筛选元数据、记录总数和版本 |
-| `wecom_read_records` | 按子表分页，选择字段 ID，保留记录与字段对应关系及图片/附件 locator |
-| `wecom_download_asset` | 按 locator 重新验证归属，下载单个原图或原始附件；小图片同时返回 MCP image |
-| `wecom_create_table` | 在当前用户个人目录新建智能表格，回读并返回链接、真实默认结构和初始记录总数 |
-| `wecom_update_records` | 按真实记录 ID 修改部分字段，核对提交确认与回读结果 |
-| `wecom_add_records` | 在整张子表末尾新增记录，返回真实记录 ID |
-| `wecom_delete_records` | 删除指定记录及其内容，整表核对删除结果 |
+| `wecom_table_structure` | 获取所有子表、字段定义（ID/名称/类型/标题列标记）、视图与筛选配置、记录总数及版本号（`revision`） |
+| `wecom_read_records` | 按子表分页读取记录，可指定字段 ID，返回字段值及图片/附件 `locator` |
+| `wecom_download_asset` | 校验 `locator` 所属记录与字段后下载单个原图或附件；小图片可选同时返回 MCP 图像 |
+| `wecom_create_table` | 在个人目录新建智能表格，回读并返回链接、默认表结构与初始记录数 |
+| `wecom_update_records` | 按 `record_id` 修改指定字段，并校验提交确认与回读结果 |
+| `wecom_add_records` | 在子表末尾追加记录，回读校验并返回新生成的 `record_id` |
+| `wecom_delete_records` | 按 `record_id` 删除指定记录及其内容，整表回读校验删除结果 |
 | `wecom_add_fields` | 在子表末尾新增普通列，支持设置单选/多选选项 |
-| `wecom_delete_fields` | 删除指定普通列及列内数据，同时核对字段和各视图列顺序；保留标题列 |
-| `wecom_delete_table` | 仅在用户明确要求时，将指定 URL / document_id 的整份智能表格移入回收站；可只读核对状态 |
+| `wecom_delete_fields` | 删除指定普通列及列内数据，保留标题列，并校验字段列表与各视图列顺序 |
+| `wecom_delete_table` | 将指定 `url` 或 `document_id` 的整份智能表格移入回收站；支持 `check_only` 只读查询状态 |
 
-可直接对 Codex 说：
+常用指令示例：
 
-- “这是智能表格链接，先告诉我有哪些子表、字段和视图。”
-- “读取指定子表前 20 条的问题描述、图片和附件；说明读取范围。”
-- “继续下一页，找到这条记录的图片，只下载需要的原图并查看。”
-- “定位指定记录，列出它的附件，然后下载并检查其中一个 PPTX。”
-- “新建一张智能表格，返回链接给我查看。”
-- “在这张表中增加状态和工时列，再新增这两条任务。”
-- “把刚才确认的记录改为完成，删除那两条测试记录。”
-- 查看新表后明确说：“删掉刚才那张表：这个链接。”
+- “先看下这个智能表格有哪些子表、字段和视图：`<链接>`”
+- “读取第一个子表前 20 条记录的问题描述、图片和附件。”
+- “翻到下一页，把这条记录里的报错原图下载下来看下。”
+- “找到这条记录的附件列表，下载里面的 PPTX 文件。”
+- “在个人目录新建一张项目排期表，把链接发我。”
+- “在这张表里新增『状态』和『工时』两列，再追加两条任务记录。”
+- “把这两条记录的状态改成已完成，删掉最后两条测试记录。”
+- “把这个链接对应的智能表格移到回收站：`<链接>`”
 
-调用顺序：先结构，再用真实 `sheet_id` / `fields` 读取；后续页原样传回 `next_cursor`。下载时传回记录中的完整 `locator` 和同一表格链接。locator 是来源页与真实 ID 的组合，不是界面行号。跨会话仍可重读验证；来源页不再包含该记录时会报错，需重新读取。
+基本调用顺序：操作已有表格时，先调 `wecom_table_structure` 获取 `sheet_id` 和字段 ID，再调 `wecom_read_records` 分页读取；翻页时原样传回上一页的 `next_cursor`。下载图片或附件时，传入记录中的完整 `locator` 与同一表格链接。`locator` 由来源分页范围与记录/字段/文件 ID 组合而成（并非界面行号），跨会话仍可校验；若原分页范围已不含该记录，重新读取对应记录后再下载即可。
 
 ## 写入范围与核对
 
-已有表的行列修改都需要 `expected_revision`，使用刚读取的结构/记录结果或上一次已核对写入返回的 `revision`。`STALE_REVISION` 表示尚未提交：重新读取内容，再决定是否修改，不能只替换版本号后覆盖。写入只修改明确传入的字段、记录和列，不按界面行号或标题猜测目标。
+修改已有表格的行列时，必须传入 `expected_revision`（取自最近一次结构/记录读取或上一次写入返回的 `revision`）。若返回 `STALE_REVISION`，说明服务端版本已变化且本次请求尚未提交，需重新读取最新内容后再决定是否修改，切勿仅替换版本号直接覆盖。所有写入均按明确传入的 `sheet_id`、`record_id`、`field_id` 定位，不按界面行号或名称猜测。
 
-- 单次新增/更新/删除 1–100 条记录；新增/删除 1–20 列。编码后的请求上限 1 MiB，超限在提交前拒绝。
-- 单元格支持 TEXT、NUMBER、CHECKBOX、DATE_TIME、PROGRESS、PHONE、EMAIL、SINGLE_SELECT、MULTIPLE_SELECT。文本/电话/邮箱用字符串，日期用毫秒时间戳；进度只验证默认 0–1 格式，其他配置拒绝写入。单选/多选用结构返回的已有选项 ID 数组，不按名称猜测或自动扩充选项。
-- `null` 清空单元格。企微可能省略清空后的单元格；工具只有同时得到该记录/字段的明确清空提交确认和对应版本回读时才接受这种形式，普通读取的 `not_returned` 仍不表示已证明为空。
-- 新列支持上述类型及 IMAGE、ATTACHMENT、USER、URL；单选/多选可通过 `options` 提供选项名称，返回生成的选项 ID。其他格式由企微生成。图片/附件上传、人员和 URL 单元格、关联和派生值暂不写入；关联/公式等复杂列暂不创建或删除。
-- 标题列通过 `is_primary` 标记，不直接删除。新增/删除列后还核对各视图的字段顺序，避免只删除字段定义却留下视图残留。
-- 新建表的默认子表、列和初始空记录由企微决定，均按实际读取结果返回；不会把默认内容隐藏或自动清空。新增行只在已验证的 11 位 base36 表尾顺序格式中追加，其他格式明确失败。
+- **批量限制**：单次可新增/更新/删除 1–100 条记录，或新增/删除 1–20 列；编码后单次请求体上限为 1 MiB，超限会在提交前直接拒绝。
+- **支持写入的单元格类型**：`TEXT`、`NUMBER`、`CHECKBOX`、`DATE_TIME`、`PROGRESS`、`PHONE`、`EMAIL`、`SINGLE_SELECT`、`MULTIPLE_SELECT`。文本/电话/邮箱传字符串，日期传毫秒时间戳，进度支持默认的 `0–1` 数值，单选/多选传结构中已有的选项 ID 数组（不支持按名称匹配或自动新建选项）。
+- **清空单元格**：传入 `null` 清空。企业微信服务端在清空后可能直接省略该单元格字段；工具仅在同时拿到本次明确清空确认及对应版本的记录回读时才判定清空成功，普通读取中出现的 `not_returned` 仍只代表服务端未返回该格，不等同于空值。
+- **新增与删除列**：新增列除支持上述 9 种类型外，还支持创建 `IMAGE`、`ATTACHMENT`、`USER`、`URL` 列；单选/多选列可通过 `options` 传入选项名称数组并返回生成的选项 ID，其余格式配置使用企业微信默认值。暂不支持上传图片/附件、写入人员与 URL 单元格、写入关联或派生值，也不支持创建或删除关联、公式等复杂列。
+- **标题列与视图顺序**：标题列带 `is_primary` 标记，不可删除。增删普通列后会同步调整并核对各视图中的字段顺序，避免字段定义已删但视图仍残留旧列 ID。
+- **新建表与追加行**：新建表格自带的默认子表、列和初始空记录由企业微信服务端生成，工具按实际回读结果原样返回，不会自动隐藏或清空。追加记录目前仅支持企业微信默认的 11 位 base36 行序格式，遇到其他排序格式会直接报错。
 
-同一 MCP 进程内，同一文档的写请求排队执行，提交前再次检查版本，提交后核对当前请求的确认标识、版本和实际数据。企微服务端会合并旧版本命令，`base_rev` 不能当作原子比较更新；其他客户端在最后检查与提交之间仍可能修改表格。工具不承诺跨客户端原子冲突保护或批量事务回滚。提交期间/之后出现版本变化或结果不符时，明确返回未完成核验。
+同一 MCP 进程内，针对同一文档的写请求会串行排队：提交前再次核对版本，提交后核对本次请求的确认标识、版本号与回读数据。由于企业微信服务端会合并旧版本命令，`base_rev` 本身不具备跨端原子锁效果，其他客户端仍可能在提交窗口内并发修改；本工具不提供跨客户端原子冲突保护或批量事务回滚。若提交期间或提交后发现版本偏移、数据不符，会返回未完成核验错误。
 
-`WRITE_RESULT_UNKNOWN` / `WRITE_NOT_VERIFIED` 表示可能已经生效，包含可用的目标记录/字段/文档 ID。先重新读取或查看表格，不能直接重放新增或删除；写请求发出后不会因认证、网络或回读错误而自动重试。新建后回读失败时会尽可能返回已创建的链接，避免重复生成。
+当返回 `WRITE_RESULT_UNKNOWN` 或 `WRITE_NOT_VERIFIED` 时，说明请求可能已在服务端生效（错误详情中会附带相关的记录/字段/文档 ID）。此时应先重新读取或打开表格核实状态，切勿直接重放新增或删除请求。写请求一旦发出，不会因后续认证过期、网络波动或回读失败而自动重试。新建表格若在回读阶段失败，也会尽量返回已创建的文档链接，避免重复创建。
 
 ## 删除整份智能表格
 
-生成和删除是两个独立请求：`wecom_create_table` 返回链接供用户查看，**不会自动删除生成结果**。只有用户明确说要删除对应文档后，才调用 `wecom_delete_table`。输入为 `url` 或 `document_id`；同时提供时必须指向同一文档。不接受标题定位、批量删除或永久删除参数。
+`wecom_delete_table` 仅在用户明确要求删除某份智能表格时调用（`wecom_create_table` 创建新表后不会自动清理生成结果）。定位参数为 `url` 或 `document_id`（两者同时传入时必须指向同一文档），不支持按标题搜索、批量删除或永久删除。
 
-工具先核实智能表格类型、文档到真实文件 ID 的唯一映射和当前账号删除权限，再提交一次移入回收站任务。只有任务成功，并在回收站确认精确的文件 ID、智能表格类型和删除状态，才返回 `state: "recycle_bin"`、`recycle_verified: true`、`permanent: false`。已在回收站的同一文档直接返回已确认状态，不再次提交。回收站保留期限由企微决定。
+执行删除时，工具先校验目标是否为智能表格、文档到文件 ID 的唯一映射关系以及当前账号的删除权限，再提交一次移入回收站任务；待异步任务完成并在回收站中核实对应的文件 ID、智能表格类型和删除状态后，才返回 `state: "recycle_bin"`、`recycle_verified: true`、`permanent: false`。若目标文档已在回收站中，则直接返回确认状态，不会重复提交。回收站保留时长由企业微信服务端决定。
 
-`check_only: true` 只读核对当前状态，可用于删除结果不确定后的检查，不执行删除。`state: "active"` 只说明当时文档仍可访问，不代表先前的异步删除任务已经失败；不要因此盲目重放删除请求。该工具继续使用原网页登录态，不申请新权限或绑定机器人。
+传入 `check_only: true` 可只读查询当前文档状态（不提交删除任务），适合在删除结果不确定时复核。注意：`check_only` 返回 `state: "active"` 仅代表当前时刻文档仍可访问，不能排除先前的异步删除任务仍在处理中，请勿据此盲目重复提交删除。
 
-## 范围与结果
+## 读取范围与附件下载
 
-- 第一版支持 `/smartsheet/` 智能表格；`/sheet/` 普通电子表格明确返回 `UNSUPPORTED_TYPE`。
-- 记录始终按整张子表的当前用户可访问范围分页，**不应用 URL 中的 viewId 或任何视图筛选**。结构工具会单独展示视图筛选元数据。第一版没有自定义筛选工具。
-- 每页 1–200 条，默认 50；返回真实总数、范围、数量、`has_more` 和游标。分页版本变化会报 `STALE_CURSOR`，重新从第一页读取以避免重复和遗漏。范围不是界面行号，记录顺序不承诺等同于界面排序。
-- 单次 JSON 输出上限为 1 MiB，超过会明确失败。记录可减小页大小或选择更少字段；结构工具暂不分页，过大的结构响应需要后续扩展。
-- 字段选择发生在本机，网页接口仍读取该页全部字段；文件仅在显式下载时获取。
-- `not_returned` 不代表已证明为空；`unresolved` 表示派生值未返回或未计算。不会用空值冒充已成功读取的派生结果。
-- 图片和附件只从真实类型为 IMAGE / ATTACHMENT 的字段识别。正文 URL 保持为文本链接，不会自动作为附件下载。
-- 图片原图来自字段中的实际地址，核验原始尺寸。明确开启 `inline_image` 后，小于等于 4 MiB 且格式支持的图片返回 MCP image；同时始终提供本机路径。已在 Codex 中使用 `view_image` 验证实际下载的 PNG。
-- 直接上传的 `SS_File` 原始附件已打通。微盘 `Wedrive` 附件已验证独立权限拒绝；有权限微盘文件的成功下载尚未验证，此类未知成功页面会明确报不支持，不返回预览页充数。
-- 单个文件保存上限 100 MiB；附件和 CDN 图片统一流式写盘，边传输边限制字节数，超限、取消或错误会中止并清理部分文件。返回实际 MIME、字节数、SHA-256、原始文件名及安全本机路径。图片尺寸仅在前 512 KiB 文件头内解析，不能确认时明确失败。
+- **文档类型**：支持 `/smartsheet/` 智能表格；传入 `/sheet/` 普通在线表格会返回 `UNSUPPORTED_TYPE`。
+- **读取范围**：`wecom_read_records` 始终按当前用户在整张子表中的可访问范围分页，**忽略 URL 中的 `viewId` 及任何视图筛选条件**（视图的筛选配置可在 `wecom_table_structure` 返回值中查看）。暂不提供自定义筛选查询工具。
+- **分页与游标**：每页 1–200 条（默认 50），返回总记录数、当前页范围、返回条数、`has_more` 及 `next_cursor`。翻页中途若子表版本变化会返回 `STALE_CURSOR`，需从第一页重读以免遗漏或重复。分页范围不等于界面行号，记录顺序也不保证与界面视图排序一致。
+- **输出大小限制**：单次工具 JSON 响应上限为 1 MiB，超限时可调小 `page_size` 或通过 `fields` 仅选择所需字段（字段过滤在本机完成，底层分块接口仍按页拉取整行数据）。
+- **缺失值与派生值**：`not_returned` 表示服务端未下发该单元格（不等同于空值）；`unresolved` 表示未解析出标准字段值（不等同于空值，也不代表服务端仍在计算；部分派生字段可能同时附带 `computed_result`）。
+- **图片与附件**：仅识别字段类型为 `IMAGE` / `ATTACHMENT` 的文件，正文中的普通 URL 保持为文本，不会当作附件下载。开启 `inline_image: true` 时，4 MiB 以内且格式支持的图片会同时返回 MCP image 载荷，所有下载文件均保存在本机并返回本地路径。
+- **附件类型支持**：直接上传的 `SS_File` 附件支持下载原始文件；微盘（`Wedrive`）附件目前仅支持识别无权限状态（`ATTACHMENT_ACCESS_DENIED`），有权限的微盘文件下载暂未支持，遇到未适配的响应页面会直接报错，不会把预览网页当成附件保存。
+- **流式写盘与校验**：单文件下载上限为 100 MiB，附件与 CDN 图片均采用流式写盘并实时限制字节数，超限、取消或出错时立即中止并清理未完成文件。下载结果返回实际 MIME、字节数、SHA-256、原始文件名及本地保存路径；图片还会在前 512 KiB 文件头内解析并校验宽高尺寸。
 
 ## 本机数据与安全
 
-v0.3 默认数据目录位于仓库外的 `~/.local/share/wecom-smarttable-mcp/`，可用 `WECOM_MCP_DATA_DIR` 指定另一专用本机目录：
+默认数据目录为仓库外的 `~/.local/share/wecom-smarttable-mcp/`，可通过环境变量 `WECOM_MCP_DATA_DIR` 指定其他专用绝对路径：
 
-- `profile/`：专用 Chrome 登录资料。
-- `state.json`：仅保存必要域的 Cookie，权限 600；不通过 MCP 返回。
-- `downloads/asset-*/`：每个下载使用独立目录与安全文件名，不覆盖原有文件。
+- `profile/`：专用 Chrome 登录资料目录。
+- `state.json`：导出的必要域名 Cookie（权限 `600`，不会通过 MCP 返回给客户端）。
+- `downloads/asset-*/`：每次下载使用独立子目录和清理后的安全文件名，不覆盖已有文件。
 
-目录权限为 700，旧 `.local/`、`dist/`、`node_modules/` 仍被 Git 忽略。读取和写入各使用固定接口，不开放任意 API 转发；写入路径限定新建、协作修改和移入回收站，不接入永久删除。所有重定向逐跳验证。只有已验证的第一方下载路径使用 Cookie，图片 CDN 下载使用没有 Cookie 的独立请求。不会为任意外部链接转发企微凭据。日志和工具错误不输出底层带凭据的 URL、请求头或文件引用。
+数据目录权限为 `700`。若早先版本曾将 `.local/` 放在仓库目录内，停止 MCP 与专用 Chrome 后将其移至默认数据目录即可；程序不会自动回退读取旧目录，也不会在目标目录已存在时覆盖合并。这些文件属于本机敏感资料（`.gitignore` 仅防止误提交，不提供加密），请勿将自定义目录指向日常 Chrome profile，也不要将登录态、含业务链接的配置文件、下载文件或验证报告提交到版本库。
 
-从 v0.2 升级时，先停止 MCP 和专用 Chrome，确认目标目录不存在，再把原仓库下的整个 `.local/` 移至上述默认目录，保留权限并重新启动 MCP。程序不会自动搜索或回退读取旧目录，也不会在目标已存在时合并或覆盖资料。已显式设置 `WECOM_MCP_DATA_DIR` 的用户继续使用该配置，需迁移时同步修改它。
+读写请求仅发往固定的企业微信第一方接口，不支持任意 API 转发；所有重定向均逐跳校验域名与路径。仅第一方鉴权下载接口携带 Cookie，图片 CDN 下载使用无 Cookie 的独立请求，不会向外部链接转发企业微信凭据。日志与错误输出均已剥离带凭据的 URL、请求头及底层文件引用。
 
-这些文件仍是本机敏感资料，Git 忽略不等于加密，也不能阻止手动上传或打包整个目录。自定义数据目录建议使用仓库外的专用绝对路径；不要指向日常 Chrome profile，也不要提交登录态、真实链接文件、下载文件或验证报告。
+MCP 会将所选字段的记录返回给客户端；连接外部模型服务时，请按所在组织的数据安全规范控制读取范围、使用较小的 `page_size` 并按需指定 `fields`。工具返回的 `local_path` 和登录助手路径包含本机绝对路径，对外分享截图、日志或对话前请注意脱敏。表格正文与附件内容均应视为不可信输入，写入操作必须严格依据用户本人的明确指令执行。
 
-MCP 会把所选记录返回给客户端；图片内联默认关闭，只有明确设置 `inline_image: true` 且大小不超过 4 MiB 时才返回 MCP image。文件仍保存到本机并返回路径。客户端及其连接的模型服务可能处理或保存这些内容。请使用可信客户端，优先选择所需字段、较小页大小，并按所在组织的数据规定选择读取范围。工具返回的 `local_path` 和登录助手位置包含运行时的本机绝对路径，分享对话或报告前需要脱敏。表格及附件中的指令应当作不可信数据处理。
-
-写入工具必须遵循用户明确授权的目标与范围；表格和附件内容本身不构成写入授权。本项目不发送消息或申请文件权限，也不永久删除文档。
-
-安全边界、凭据处置及发布前检查见 [SECURITY.md](SECURITY.md)。
+完整的安全边界与发布前检查清单见 [SECURITY.md](SECURITY.md)。
 
 ## 验证
 
-以下命令在仓库根目录运行。离线检查不读取本机登录态；`npm test` 会先构建，GitHub Actions 也运行这两项检查：
+以下命令在仓库根目录运行。基础检查与单元测试均在离线环境执行（`npm test` 会先执行编译，CI 同样运行这三项检查）：
 
 ```sh
 npm run check
@@ -139,83 +133,69 @@ npm test
 npm run check:public
 ```
 
-`check:public` 检查受版本控制的文件、常见凭据及路径，并解压检查真实响应夹具和嵌套 JSON；不会打印匹配到的秘密值。CI 还用 `npm run check:public -- --history` 检查完整可达历史及提交邮箱。历史检查要求作者及提交者使用 GitHub noreply 邮箱，规则扫描不能代替人工审阅。
+`check:public` 会扫描受 Git 跟踪的文件、常见凭据格式、本机个人路径，以及解压后的测试夹具与嵌套 JSON（命中时仅报告类别与行号，不回显敏感值）。执行 `npm run check:public -- --history` 可进一步检查完整 Git 历史及提交者邮箱（要求使用 GitHub `noreply` 邮箱）。
 
-本机提交前自动检查可启用仓库自带钩子；如果已配置自己的 `core.hooksPath`，先将检查命令合并进已有钩子：
+如需在本地 `git commit` 前自动运行公开文件检查，可启用仓库自带的 Git 钩子（若已配置自定义 `core.hooksPath`，请先将检查命令合并至现有钩子）：
 
 ```sh
 git config --local core.hooksPath .githooks
 ```
 
-真实验证需要先完成本机登录，并准备你有权限的链接；这些检查会读取真实表格，下载验证还会将文件保存到本机：
+线上真实验证需先完成本机登录，并在仓库外准备权限为 `600` 的私有配置文件（切勿提交到仓库）：
 
-```sh
-npm run verify:live -- /本机私有目录/target.json
-node scripts/verify-login-flow.mjs /本机私有目录/target.json
-```
+1. **读取、下载与登录引导验证**：
+   ```sh
+   npm run verify:live -- /本机私有目录/target.json
+   node scripts/verify-login-flow.mjs /本机私有目录/target.json
+   ```
+   基础检查只需 `{ "url": "https://doc.weixin.qq.com/smartsheet/your_document_id" }`。若加上 `--browser` 运行浏览器登录恢复验证或运行 `scripts/verify-codex-login.mjs`，还需提供至少含一条记录的 `sheet_id`（或使用含 `tab` 参数的 URL）及非空 `fields` 数组：
+   ```json
+   {
+     "url": "https://doc.weixin.qq.com/smartsheet/your_document_id",
+     "sheet_id": "sheet_id_from_structure",
+     "fields": ["field_id_from_structure"]
+   }
+   ```
+2. **专用表写入验证**（仅限专门用于测试的智能表格，勿填入业务表）：
+   ```json
+   {
+     "allow_test_writes": true,
+     "title": "MCP 写入验收 YYYY-MM-DD",
+     "url": "https://doc.weixin.qq.com/smartsheet/your_test_document_id"
+   }
+   ```
+   ```sh
+   node scripts/verify-write.mjs /本机私有目录/write-config.json
+   ```
+   传入 `url` 时会校验表名完全一致，不传 `url` 时自动新建测试表。若中途报错，请先查看私有目录下的报告，不要对结果未知的写操作直接重跑。
+3. **整表移入回收站验证**（需使用另一张单独授权删除的测试表）：
+   ```json
+   {
+     "allow_test_delete": true,
+     "title": "MCP 删除验收 YYYY-MM-DD",
+     "url": "https://doc.weixin.qq.com/smartsheet/your_delete_test_document_id",
+     "preserve_urls": ["https://doc.weixin.qq.com/smartsheet/your_retained_document_id"]
+   }
+   ```
+   ```sh
+   node scripts/verify-delete-table.mjs /本机私有目录/delete-config.json
+   ```
+   若删除结果不确定，可在配置中加入 `"check_only": true` 进行只读复核，不要直接重复运行删除。
 
-`verify:live` 和错误检查的 `target.json` 只需 `{ "url": "你有权限的真实智能表格链接" }`。加 `--browser` 的登录恢复检查和 Codex 原生检查还需提供 `sheet_id`（也可使用 URL 的 `tab`）和非空 `fields` 数组；从结构工具返回值取得 ID，选择至少有一条记录的子表，例如：
-
-```json
-{
-  "url": "https://doc.weixin.qq.com/smartsheet/your_document_id",
-  "sheet_id": "sheet_id_from_structure",
-  "fields": ["field_id_from_structure"]
-}
-```
-
-真实链接及 ID 仅保存在本机私有的 `target.json`，权限设为 600，勿提交到仓库。真实验证脚本通过 MCP SDK 启动 stdio 服务，逐页核对每张子表的总数及唯一 ID，按需下载一张图片和一个直接上传附件，并检查文件字节、MCP 图片载荷和凭据泄露；报告保存到数据目录的 `live-report.json`，也遵循 `WECOM_MCP_DATA_DIR`。图片验证会明确开启内联以比较字节。报告内含文档标识和本机路径，不能直接公开。离线解析测试只使用真实响应脱敏样本。
-
-登录交互验证不替换企业微信响应：基础脚本使用真实 MCP 表单往返验证取消；加 `--browser` 时复制本任务专用 profile 到隔离目录，不复制导出会话，实际打开浏览器验证恢复登录及续读。`scripts/verify-codex-login.mjs` 则通过本机 Codex app-server 检查原生确认事件和原请求恢复，不调用模型、不写全局配置。浏览器恢复与 Codex 原生验证脚本从上述私有配置读取子表和字段 ID，不内置验收表格标识；它们不属于通用离线测试，浏览器验证会在数据目录内创建隔离 profile。
-
-写入验收仅用于明确授权的专用表，不能把业务表的读取配置直接用于写入测试。将下列配置保存在本机私有目录并设置权限 600；指定 `url` 时会检查表名必须完全一致，不提供 `url` 时新建专用验收表：
-
-```json
-{
-  "allow_test_writes": true,
-  "title": "MCP 写入验收 YYYY-MM-DD",
-  "url": "https://doc.weixin.qq.com/smartsheet/your_test_document_id"
-}
-```
-
-```sh
-node scripts/verify-write.mjs /本机私有目录/write-config.json
-```
-
-脚本通过真实 stdio MCP 验证 13 类新列、9 类单元格写入与清空、跨 200 条边界的增删行、列顺序、旧版本拒绝和同进程并发；只删除本轮创建的测试行和列，保留验收表及一条样例。私有报告保存在配置文件所在目录，权限 600。失败后先检查报告，不能直接重跑未知结果的写入。
-
-整份文档删除必须另外使用专用表；下面的 `url` 只能是用户明确授权删除的那张验收表，不提供时脚本会先新建该专用表，再执行已授权的移入回收站验收：
-
-```json
-{
-  "allow_test_delete": true,
-  "title": "MCP 删除验收 YYYY-MM-DD",
-  "url": "https://doc.weixin.qq.com/smartsheet/your_delete_test_document_id",
-  "preserve_urls": ["https://doc.weixin.qq.com/smartsheet/your_retained_document_id"]
-}
-```
-
-```sh
-node scripts/verify-delete-table.mjs /本机私有目录/delete-config.json
-```
-
-删除脚本仅提交一次删除，验证 URL/ID 一致性、删除前只读检查、回收站结果和保留表可读性。发生不确定结果时，在同一私有配置中增加 `"check_only": true`，再运行只读核对；这种模式不会新建或提交删除。不要原样重放删除验收。不会恢复或永久删除回收站中的测试表。
-
-依赖漏洞检查使用 npm 官方审计接口；部分镜像没有实现该接口，报错不能视为检查通过：
+依赖安全审计建议使用 npm 官方源（部分镜像源未实现 audit 接口）：
 
 ```sh
 npm audit --registry=https://registry.npmjs.org
 ```
 
-具体样本、已验证行为和未验证范围见 [VALIDATION.md](VALIDATION.md)。
+详细的协议分析与验证记录见 [VALIDATION.md](VALIDATION.md)。
 
-## 实现依据
+## 技术说明
 
-- 核查了 [wecom-doc-mcp 当前源码](https://github.com/Tiansiyu-tj/wecom-doc-mcp/blob/647f51de5738bb6b6adf9cf4ff75d87f46d4cc05/src/index.ts)。其中按普通文档正文提取、首页 200 登录判断及 HTML 回退均未复用。
-- 核查了 [Playwright MCP 当前入口](https://github.com/microsoft/playwright-mcp/blob/ab6d67cbf8b619338f096980806fdbe29432cc4d/cli.js)、其 Playwright 实现以及[持久化浏览器文档](https://playwright.dev/docs/api/class-browsertype#browser-type-launch-persistent-context)。采用独立 profile 和本地会话保存。
-- [企业微信官方记录 API](https://developer.work.weixin.qq.com/document/path/99915)使用应用 access token，并不等于本项目的网页协议。本项目没有用应用 API 契约猜测智能表格网页数据。
-- MCP 使用 [官方 TypeScript SDK](https://ts.sdk.modelcontextprotocol.io/v2/)，版本由锁文件固定。
+- 登录与会话持久化基于 Playwright 的持久化浏览器上下文（`launchPersistentContext`），使用独立 Chrome profile 并在本地保存必要 Cookie。
+- 数据读写直接对接企业微信文档网页端协议（`/dop-api/` 与 `/webdisk/` 相关接口），与企业微信开放平台需应用 `access_token` 的服务端 API 相互独立。
+- MCP 服务端基于官方 [`@modelcontextprotocol/server`](https://ts.sdk.modelcontextprotocol.io/v2/) 实现。
 
 ## 许可证
 
-本项目原创代码采用 [MIT License](LICENSE)，允许在保留版权及许可证声明的条件下使用、修改和分发。第三方依赖仍适用各自的许可证。
+本项目代码采用 [MIT License](LICENSE) 开源，第三方依赖遵循各自原有许可证。

@@ -45,7 +45,7 @@ export class AuthenticatedRequests {
         const capabilities = envelope?.[CLIENT_CAPABILITIES_META_KEY] || server.server.getClientCapabilities();
         const elicitation = capabilities?.elicitation;
         const supportsForm = elicitation && (elicitation.form !== undefined || Object.keys(elicitation).length === 0);
-        if (!supportsForm) throw new WecomError(error.code, '需要登录，但当前客户端不支持 MCP 表单确认。请让 Codex 启动本机登录助手后重试；无需提供 Cookie。', {
+        if (!supportsForm) throw new WecomError(error.code, '需要登录，但当前客户端不支持 MCP 表单确认。请在终端运行本机登录助手后重试；无需提供 Cookie。', {
           interactive_login_available: false, login_helper: fileURLToPath(new URL('./login.js', import.meta.url)),
         });
         return inputRequired({
