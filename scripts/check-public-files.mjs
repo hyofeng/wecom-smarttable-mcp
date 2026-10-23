@@ -14,7 +14,7 @@ const patterns = [
   ['share_or_download_secret', /[?&](?:scode|access_token|token|signature|auth_key|agent_code)=[^\s"&]{4,}/i],
   ['session_cookie', /(?:wedoc_sid|low_login_enable|TOK)\s*[=:]\s*["']?[A-Za-z0-9_%+-]{12,}/],
 ];
-const safeFixtureStrings = new Set(['smartsheet', 'sheet', 'folder', 'SS_File', 'Wedrive', 'pdf', 'pptx', 'png', 'jpg', 'jpeg', 'gif', 'webp']);
+const safeFixtureStrings = new Set(['smartsheet', 'sheet', 'folder', 'SS_File', 'Wedrive', 'pdf', 'pptx', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'text']);
 
 export function inspectPublicFile(path, input) {
   const findings = [];
@@ -42,7 +42,8 @@ export function inspectPublicFile(path, input) {
     if (value && typeof value === 'object') {
       for (const [key, item] of Object.entries(value)) {
         if (key === 'cookies' && Array.isArray(item) && item.length) add('session_state');
-        if (fixture && /^[fr][A-Za-z0-9]{5}$/.test(key)) add('unredacted_fixture_identifier');
+        if (fixture && /^[fr][A-Za-z0-9]{5}$/.test(key)
+          && !(key === 'finish' && typeof item === 'boolean')) add('unredacted_fixture_identifier');
         visit(item, depth + 1);
       }
       return;

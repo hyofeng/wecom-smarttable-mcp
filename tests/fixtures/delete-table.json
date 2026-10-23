@@ -1,0 +1,114 @@
+{
+  "role": {
+    "file_roles": [
+      {
+        "doc_id": "id_example_document",
+        "file_info": {
+          "doc_id": "id_example_document",
+          "file_id": "id_example_file",
+          "file_type": 70,
+          "real_name": "value_example_delete_table"
+        },
+        "role_info": {
+          "allow_operations": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            44,
+            47,
+            48,
+            49,
+            50,
+            100,
+            102,
+            103,
+            104,
+            105,
+            106,
+            107,
+            109,
+            110,
+            111,
+            112,
+            113,
+            114,
+            115,
+            119,
+            120,
+            121,
+            123,
+            124,
+            125,
+            126,
+            130,
+            132,
+            133,
+            134,
+            135,
+            136,
+            137,
+            150,
+            151,
+            152,
+            153,
+            154,
+            155,
+            156,
+            157,
+            158,
+            159,
+            160,
+            161,
+            162,
+            164,
+            165
+          ]
+        }
+      }
+    ]
+  },
+  "recycle": {
+    "finish": false,
+    "sync_key_new": "id_example_cursor",
+    "list": [
+      {
+        "file_id": "id_example_file.recycle",
+        "file_type": 70,
+        "status": 2
+      }
+    ]
+  },
+  "last": {
+    "finish": true,
+    "sync_key_new": "id_example_last_cursor"
+  }
+}

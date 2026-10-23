@@ -3,8 +3,8 @@ import { documentUrl, privateDirectory, profilePath, saveState } from './local.j
 import { WecomError } from './errors.js';
 import { WecomClient } from './client.js';
 
-export async function loginWithBrowser(input: string, signal?: AbortSignal) {
-  const target = documentUrl(input);
+export async function loginWithBrowser(input?: string, signal?: AbortSignal) {
+  const target = input === undefined ? new URL('https://doc.weixin.qq.com/home/recent') : documentUrl(input).url;
   if (signal?.aborted) throw new WecomError('LOGIN_CANCELLED', '登录请求已取消。');
   await privateDirectory();
   await privateDirectory(profilePath);
@@ -28,9 +28,9 @@ export async function loginWithBrowser(input: string, signal?: AbortSignal) {
       clearTimeout(timer);
       error ? reject(error) : resolve();
     };
-    timer = setTimeout(() => complete(new WecomError('LOGIN_TIMEOUT', '15 分钟内未确认登录完成，请重新发起读取。')), 15 * 60 * 1000);
+    timer = setTimeout(() => complete(new WecomError('LOGIN_TIMEOUT', '15 分钟内未确认登录完成，请重新发起操作。')), 15 * 60 * 1000);
   });
-  const cancel = () => complete(new WecomError('LOGIN_CANCELLED', '登录已取消，未继续读取原请求。'));
+  const cancel = () => complete(new WecomError('LOGIN_CANCELLED', '登录已取消，未继续原请求。'));
   context.once('close', cancel);
   signal?.addEventListener('abort', cancel, { once: true });
   page.on('response', async response => {
@@ -51,8 +51,8 @@ export async function loginWithBrowser(input: string, signal?: AbortSignal) {
   });
   try {
     if (signal?.aborted) cancel();
-    const navigation = settled ? Promise.resolve() : page.goto(target.url.href, { waitUntil: 'domcontentloaded' })
-      .catch(() => { throw new WecomError('LOGIN_NAVIGATION_FAILED', '登录页面无法加载，请重新发起读取。'); });
+    const navigation = settled ? Promise.resolve() : page.goto(target.href, { waitUntil: 'domcontentloaded' })
+      .catch(() => { throw new WecomError('LOGIN_NAVIGATION_FAILED', '登录页面无法加载，请重新发起操作。'); });
     await Promise.all([finish, navigation]);
   } finally {
     clearTimeout(timer!);
@@ -66,7 +66,7 @@ export async function loginWithBrowser(input: string, signal?: AbortSignal) {
 export class BrowserLogin {
   private pending?: { promise: Promise<void>; controller: AbortController; waiters: number };
 
-  async login(url: string, signal: AbortSignal) {
+  async login(url: string | undefined, signal: AbortSignal) {
     if (signal.aborted) throw new WecomError('LOGIN_CANCELLED', '登录请求已取消。');
     if (!this.pending) {
       const controller = new AbortController();

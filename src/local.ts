@@ -38,3 +38,11 @@ export function documentUrl(input: string) {
   }
   return { id: match[1], url: canonical };
 }
+
+export function documentReference(input: { url?: string; document_id?: string }) {
+  if (!input.url && !input.document_id) throw new WecomError('INVALID_ARGUMENT', '需要 URL 或真实 document_id，不能按标题定位文档。');
+  if (input.document_id !== undefined && !/^[A-Za-z0-9_-]{1,256}$/.test(input.document_id)) throw new WecomError('INVALID_ARGUMENT', 'document_id 格式无效。');
+  const doc = documentUrl(input.url || `https://doc.weixin.qq.com/smartsheet/${input.document_id}`);
+  if (input.document_id !== undefined && doc.id !== input.document_id) throw new WecomError('DOCUMENT_ID_MISMATCH', 'URL 与 document_id 指向不同文档，尚未操作。');
+  return doc;
+}

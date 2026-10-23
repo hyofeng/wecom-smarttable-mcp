@@ -35,22 +35,24 @@ async function open(dataDir, action, protocol = 'legacy') {
     env: { ...process.env, WECOM_MCP_DATA_DIR: dataDir }, stderr: 'pipe' }));
   return { client, questions: () => questions };
 }
-async function cancelled(action, protocol) {
-  const dir = join(temporary, `${protocol}-${action}`);
+async function cancelled(action, protocol, name = 'wecom_table_structure', args = { url }) {
+  const dir = join(temporary, `${protocol}-${action}-${name}`);
   await mkdir(dir, { mode: 0o700 });
   const { client, questions } = await open(dir, action, protocol);
   try {
-    const result = await client.callTool({ name: 'wecom_table_structure', arguments: { url } });
+    const result = await client.callTool({ name, arguments: args });
     assert.equal(result.isError, true);
     assert.equal(result.structuredContent.error.code, 'LOGIN_CANCELLED');
     assert.equal(questions(), 1);
     await assert.rejects(access(join(dir, 'profile')));
-    results.push(`${protocol}:${action}`);
+    results.push(`${protocol}:${action}:${name}`);
   } finally { await client.close(); }
 }
 try {
   for (const protocol of ['legacy', '2026-07-28']) {
     for (const action of ['decline', 'cancel', 'confirm_false']) await cancelled(action, protocol);
+    await cancelled('decline', protocol, 'wecom_create_table', { title: 'value_example_cancelled_creation' });
+    await cancelled('cancel', protocol, 'wecom_delete_table', { document_id: doc.id, check_only: true });
   }
   if (process.argv.includes('--browser')) {
     const dir = join(temporary, 'accepted');

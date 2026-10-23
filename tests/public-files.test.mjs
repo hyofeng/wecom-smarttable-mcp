@@ -19,6 +19,10 @@ test('私有文件与凭据被阻止，诊断不返回匹配值', () => {
 });
 
 test('检查解压后的真实夹具及嵌套 JSON，不把 Base64 当成脱敏', async () => {
+  for (const name of ['write-protocol', 'delete-table']) {
+    const data = await readFile(new URL(`fixtures/${name}.json`, import.meta.url));
+    assert.deepEqual(inspectPublicFile(`tests/fixtures/${name}.json`, data), []);
+  }
   const input = JSON.parse(await readFile(new URL('fixtures/images-first-page.json', import.meta.url), 'utf8'));
   assert.deepEqual(inspectPublicFile('tests/fixtures/example.json', Buffer.from(JSON.stringify(input))), []);
   const block = input.data.initialAttributedText.text[0];

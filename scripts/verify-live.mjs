@@ -25,7 +25,7 @@ async function call(name,args) {
 try {
  await client.connect(transport);
  const tools=await client.listTools();
- assert.deepEqual(tools.tools.map(t=>t.name).sort(),['wecom_download_asset','wecom_read_records','wecom_table_structure']);
+ assert.deepEqual(tools.tools.map(t=>t.name).sort(),['wecom_add_fields','wecom_add_records','wecom_create_table','wecom_delete_fields','wecom_delete_records','wecom_delete_table','wecom_download_asset','wecom_read_records','wecom_table_structure','wecom_update_records']);
  const s=(await call('wecom_table_structure',{url})).structuredContent;
  for(const table of s.sheets) {
   const seen=new Set();let cursor;let pages=0;let total;let firstImage;let firstAttachment;let firstNative;

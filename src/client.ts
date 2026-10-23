@@ -5,7 +5,8 @@ import { documentUrl, statePath } from './local.js';
 import { parseChunk, parseJson, presentRecord, type Chunk, type Schema } from './protocol.js';
 
 const DOC = 'https://doc.weixin.qq.com';
-const READ_PATHS = new Set(['/cgi-bin/online_docs/user_info', '/dop-api/opendoc', '/dop-api/get/sheet', '/api/smartsheet/reader/fetch_view_filter_spec']);
+const READ_PATHS = new Set(['/cgi-bin/online_docs/user_info', '/dop-api/opendoc', '/dop-api/get/sheet', '/api/smartsheet/reader/fetch_view_filter_spec',
+  '/diskauth/get_auth_info', '/diskfile/recycle_list', '/diskfile/querytaskresult']);
 type Raw = Record<string, any>;
 
 export class WecomClient {
@@ -35,12 +36,22 @@ export class WecomClient {
   }
 
   async json(path: string, params: Record<string, unknown> = {}, data?: unknown): Promise<Raw> {
+    return this.readRequest(path, params, data === undefined ? {} : { data });
+  }
+
+  async desktopRead(path: '/diskauth/get_auth_info' | '/diskfile/recycle_list' | '/diskfile/querytaskresult', form: Record<string, string>): Promise<Raw> {
+    const result = await this.readRequest(path, { sid: this.cookie('wedoc_sid'), wedoc_xsrf: this.cookie('low_login_enable') }, { form });
+    requireData(result.head?.ret === 0 && result.body && typeof result.body === 'object', '文档管理只读接口响应不完整。');
+    return result.body;
+  }
+
+  private async readRequest(path: string, params: Record<string, unknown>, body: { data?: unknown; form?: Record<string, string> }): Promise<Raw> {
     if (!READ_PATHS.has(path)) throw new WecomError('LOCAL_SECURITY_ERROR', '请求路径不在已验证的只读接口清单中。');
     const url = new URL(path, DOC);
     for (const [k, v] of Object.entries({ ...params, xsrf: this.cookie('TOK') })) if (v !== undefined) url.searchParams.set(k, String(v));
     let response;
     try {
-      response = await this.context.fetch(url.href, { method: data === undefined ? 'GET' : 'POST', data,
+      response = await this.context.fetch(url.href, { method: Object.keys(body).length ? 'POST' : 'GET', ...body,
         headers: { Referer: `${DOC}/`, Accept: 'application/json' }, maxRedirects: 0 });
     } catch { throw new WecomError('API_ERROR', '企业微信接口连接失败或超时。', { endpoint: path }); }
     try {
@@ -83,7 +94,7 @@ export class WecomClient {
     return first.schema;
   }
 
-  async structure(input: string) {
+  async openDocument(input: string) {
     const doc = documentUrl(input);
     await this.checkSession();
     const params: Raw = { id: doc.id, normal: 1, noEscape: 1, outformat: 1, startrow: 0, endrow: 0,
@@ -96,6 +107,11 @@ export class WecomClient {
     requireData(open.clientVars?.privilegeAttribute?.can_read === 1, '文档响应未明确授予读取权限。');
     const directory = open.clientVars?.collab_client_vars?.header?.[0]?.d;
     requireData(Array.isArray(directory) && directory.every((s: Raw) => typeof s.id === 'string' && typeof s.type === 'string'), '缺少完整的子表目录。');
+    return { doc, open, directory: directory as Raw[] };
+  }
+
+  async structure(input: string) {
+    const { doc, open, directory } = await this.openDocument(input);
     const filterResponse = await this.json('/api/smartsheet/reader/fetch_view_filter_spec', {
       sid: this.cookie('wedoc_sid'), wedoc_xsrf: this.cookie('low_login_enable'),
     }, { pad_id: doc.id, ret_all: true, view_items: [] });

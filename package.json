@@ -1,6 +1,6 @@
 {
   "name": "wecom-smarttable-mcp",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -32,7 +32,7 @@
     "typescript": "7.0.2"
   },
   "license": "MIT",
-  "description": "Read-only MCP server for WeCom smart tables using a local browser session.",
+  "description": "Read and edit WeCom smart tables, including recycle-bin deletion, using a local browser session.",
   "repository": {
     "type": "git",
     "url": "https://github.com/hyofeng/wecom-smarttable-mcp.git"

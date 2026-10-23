@@ -1,0 +1,286 @@
+{
+  "initial_schema": {
+    "k3": {
+      "id_example_000002": {
+        "k30": "value_example_000001",
+        "k31": 17,
+        "k17": {
+          "k3": []
+        }
+      },
+      "id_example_000003": {
+        "k30": "value_example_000002",
+        "k31": 1
+      },
+      "id_example_000004": {
+        "k30": "value_example_000003",
+        "k31": 4
+      },
+      "id_example_000005": {
+        "k30": "value_example_000004",
+        "k31": 7
+      },
+      "id_example_000006": {
+        "k30": "value_example_000005",
+        "k31": 2
+      }
+    },
+    "k4": [
+      {
+        "k30": "id_example_000007",
+        "k31": "value_example_000006",
+        "k32": 1,
+        "k1": {
+          "k2": [
+            "id_example_000003",
+            "id_example_000002",
+            "id_example_000005",
+            "id_example_000006",
+            "id_example_000004"
+          ]
+        }
+      }
+    ],
+    "k9": "id_example_000003"
+  },
+  "schema": {
+    "k3": {
+      "id_example_000006": {
+        "k30": "value_example_000005",
+        "k31": 2
+      },
+      "id_example_000013": {
+        "k30": "value_example_000007",
+        "k31": 4
+      },
+      "id_example_000014": {
+        "k30": "value_example_000008",
+        "k31": 8
+      },
+      "id_example_000004": {
+        "k30": "value_example_000003",
+        "k31": 4
+      },
+      "id_example_000015": {
+        "k30": "value_example_000009",
+        "k31": 5
+      },
+      "id_example_000016": {
+        "k30": "value_example_000010",
+        "k31": 16
+      },
+      "id_example_000017": {
+        "k30": "value_example_000011",
+        "k31": 14,
+        "k14": {
+          "k1": 0,
+          "k3": false,
+          "k4": 0,
+          "k5": [],
+          "k6": false
+        }
+      },
+      "id_example_000018": {
+        "k30": "value_example_000012",
+        "k31": 1
+      },
+      "id_example_000019": {
+        "k30": "value_example_000013",
+        "k31": 2
+      },
+      "id_example_000020": {
+        "k30": "value_example_000014",
+        "k31": 2
+      },
+      "id_example_000021": {
+        "k30": "value_example_000015",
+        "k31": 9,
+        "k9": {
+          "k3": [
+            {
+              "k1": "id_example_000027",
+              "k2": "value_example_000016",
+              "k3": 11
+            },
+            {
+              "k1": "id_example_000028",
+              "k2": "value_example_000017",
+              "k3": 13
+            }
+          ]
+        }
+      },
+      "id_example_000022": {
+        "k30": "value_example_000018",
+        "k31": 3
+      },
+      "id_example_000003": {
+        "k30": "value_example_000002",
+        "k31": 1
+      },
+      "id_example_000023": {
+        "k30": "value_example_000019",
+        "k31": 17,
+        "k17": {
+          "k3": [
+            {
+              "k1": "id_example_000029",
+              "k2": "value_example_000016",
+              "k3": 11
+            },
+            {
+              "k1": "id_example_000030",
+              "k2": "value_example_000017",
+              "k3": 13
+            }
+          ]
+        }
+      },
+      "id_example_000024": {
+        "k30": "value_example_000020",
+        "k31": 6
+      },
+      "id_example_000002": {
+        "k30": "value_example_000001",
+        "k31": 17,
+        "k17": {
+          "k3": []
+        }
+      },
+      "id_example_000025": {
+        "k30": "value_example_000021",
+        "k31": 15
+      },
+      "id_example_000005": {
+        "k30": "value_example_000004",
+        "k31": 7
+      },
+      "id_example_000026": {
+        "k30": "value_example_000022",
+        "k31": 7
+      }
+    },
+    "k4": [
+      {
+        "k30": "id_example_000007",
+        "k31": "value_example_000006",
+        "k32": 1,
+        "k1": {
+          "k2": [
+            "id_example_000003",
+            "id_example_000002",
+            "id_example_000005",
+            "id_example_000006",
+            "id_example_000004",
+            "id_example_000020",
+            "id_example_000018",
+            "id_example_000019",
+            "id_example_000022",
+            "id_example_000013",
+            "id_example_000015",
+            "id_example_000024",
+            "id_example_000026",
+            "id_example_000014",
+            "id_example_000021",
+            "id_example_000017",
+            "id_example_000025",
+            "id_example_000016",
+            "id_example_000023"
+          ]
+        }
+      }
+    ],
+    "k9": "id_example_000003"
+  },
+  "user": {
+    "1": "id_example_000033",
+    "2": "value_example_000023"
+  },
+  "update": {
+    "t": 3013,
+    "v": 5,
+    "c": {
+      "1": "id_example_000001",
+      "3": "id_example_000008",
+      "4": {
+        "id_example_000003": {
+          "1": [
+            {
+              "1": "text",
+              "2": "value_example_000024",
+              "4": {}
+            }
+          ],
+          "30": 1
+        }
+      },
+      "5": {
+        "1": "id_example_000033",
+        "2": "value_example_000023"
+      },
+      "7": false
+    },
+    "r": -1,
+    "o": 0
+  },
+  "insert_field": {
+    "t": 3014,
+    "v": 5,
+    "c": {
+      "1": "id_example_000001",
+      "3": {
+        "1": "id_example_000020",
+        "2": 2,
+        "3": "value_example_000014",
+        "4": {
+          "id_example_000007": 5
+        }
+      }
+    },
+    "r": -1,
+    "o": 0
+  },
+  "clear": {
+    "t": 3013,
+    "v": 5,
+    "c": {
+      "1": "id_example_000001",
+      "3": "id_example_000031",
+      "4": {
+        "id_example_000018": {
+          "1": null,
+          "30": 1
+        }
+      },
+      "5": {
+        "1": "id_example_000033",
+        "2": "value_example_000023"
+      },
+      "7": false
+    },
+    "r": -1,
+    "o": 0
+  },
+  "clear_ack": [
+    [
+      {
+        "t": 3013,
+        "c": {
+          "1": "id_example_000001",
+          "3": "id_example_000031",
+          "4": {
+            "id_example_000018": {
+              "30": 1
+            }
+          }
+        }
+      }
+    ]
+  ],
+  "cleared_record": {
+    "id": "id_example_000031",
+    "raw": {
+      "k1": {}
+    }
+  }
+}

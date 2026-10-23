@@ -22,19 +22,19 @@ export class AuthenticatedRequests {
     try { return await action(client); } finally { await client.close(); }
   }
 
-  async run<T>(server: McpServer, ctx: ServerContext, tool: string, args: { url: string }, action: (client: WecomClient) => Promise<T>): Promise<T | InputRequiredResult> {
-    documentUrl(args.url);
+  async run<T>(server: McpServer, ctx: ServerContext, tool: string, args: { url?: string; [key: string]: unknown }, action: (client: WecomClient) => Promise<T>): Promise<T | InputRequiredResult> {
+    if (args.url !== undefined) documentUrl(args.url);
     const requestHash = createHash('sha256').update(JSON.stringify([tool, args])).digest('hex');
     const answer = inputResponse(ctx.mcpReq.inputResponses, confirmationKey);
     let approved = false;
     if (answer.kind !== 'missing') {
       const intent = ctx.mcpReq.requestState<LoginIntent>();
-      if (intent?.requestHash !== requestHash) throw new WecomError('LOGIN_REQUEST_CHANGED', '登录确认与原请求不匹配，请重新发起读取。');
+      if (intent?.requestHash !== requestHash) throw new WecomError('LOGIN_REQUEST_CHANGED', '登录确认与原请求不匹配，请重新发起操作。');
       if (answer.kind !== 'elicit') throw new WecomError('LOGIN_RESPONSE_INVALID', '登录确认不是有效的表单响应。');
-      if (answer.action !== 'accept') throw new WecomError('LOGIN_CANCELLED', '已取消登录，未打开浏览器或继续读取。');
+      if (answer.action !== 'accept') throw new WecomError('LOGIN_CANCELLED', '已取消登录，未打开浏览器或继续原操作。');
       const content = acceptedContent(ctx.mcpReq.inputResponses, confirmationKey, confirmationSchema);
       if (!content) throw new WecomError('LOGIN_RESPONSE_INVALID', '登录确认缺少有效的确认选项。');
-      if (!content.confirm) throw new WecomError('LOGIN_CANCELLED', '未同意打开登录窗口，未继续读取。');
+      if (!content.confirm) throw new WecomError('LOGIN_CANCELLED', '未同意打开登录窗口，未继续原操作。');
       approved = true;
     }
     try { return await this.execute(action); }

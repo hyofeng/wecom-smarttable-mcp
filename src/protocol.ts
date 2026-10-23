@@ -9,7 +9,7 @@ export const fieldTypes: Record<number, string> = {
   12: 'CREATED_TIME', 13: 'MODIFIED_TIME', 14: 'PROGRESS', 15: 'PHONE', 16: 'EMAIL',
   17: 'SINGLE_SELECT', 18: 'LINK_RECORDS', 19: 'FORMULA', 20: 'LOOKUP', 21: 'TWO_WAY_LINK_RECORDS',
 };
-export interface Field { id: string; name: string; type_code: number; type: string; options?: { id: string; name: string }[] }
+export interface Field { id: string; name: string; type_code: number; type: string; is_primary: boolean; options?: { id: string; name: string }[] }
 export interface Schema { fields: Field[]; views: Raw[]; raw: Raw }
 export interface Chunk {
   sheetId: string; revision: number; total: number; start: number; end: number;
@@ -32,7 +32,7 @@ export function schemaFromRaw(raw: Raw): Schema {
     requireData(typeof field.k30 === 'string' && Number.isInteger(field.k31), '字段缺少名称或真实类型。');
     const type = field.k31;
     const options = field[`k${type}`]?.k3;
-    return { id, name: field.k30, type_code: type, type: fieldTypes[type] || `UNKNOWN_${type}`,
+    return { id, name: field.k30, type_code: type, type: fieldTypes[type] || `UNKNOWN_${type}`, is_primary: raw.k9 === id,
       ...([9, 17].includes(type) && Array.isArray(options) ? { options: options.map((v: Raw) => ({ id: v.k1, name: v.k2 })) } : {}) };
   });
   const views = raw.k4.map((v: Raw) => {
